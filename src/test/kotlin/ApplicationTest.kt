@@ -19,5 +19,4 @@ class ApplicationTest {
         assertEquals(HttpStatusCode.OK, response.status)
         assertEquals("Benford API is live", response.bodyAsText())
     }
-
 }

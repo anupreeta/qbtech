@@ -10,7 +10,6 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.server.testing.testApplication
-//import junit.framework.TestCase.assertTrue
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -26,10 +25,11 @@ class BenfordApiTest {
     @Test
     fun testBenfordApiConformancePopulationData() = testApplication {
         application { module() }
-        val input = "In 1,253 AD, a small clinic in the village of Greystone served 1,024 residents. By 1,587, they had developed primitive diagnostic tools, logging 1,950 test subjects in a single year. The population of the kingdom rose to 2,345,000 by 2,100 CE, according to census records.\n" +
-                "Dr. Althea’s old journal noted 1.4 mmol/L of potassium in a young patient, while another had 2.3 mmol/L. A case of hyperglycemia showed blood glucose at 13.6 mmol/L. The average cholesterol level in a study of 1,450 patients was 5.2 mmol/L, with LDL levels peaking at 7.3 mmol/L in 312 of them.\n" +
-                "A critical patient’s liver enzymes were AST: 190.4 U/L and ALT: 170.2 U/L, while bilirubin levels rose to 3.8 mg/dL. The same report listed creatinine at 1.09 mg/dL and a glomerular filtration rate (GFR) of 89.5 mL/min/1.73m².\n" +
-                "Another study reported 3.2 billion erythrocytes per mL in a rare blood disorder. In contrast, a healthy subject had 4.8 million red blood cells per microliter and hemoglobin at 13.2 g/dL. Platelet counts ranged from 150,000 to 390,000 per microliter, with anomalies detected in 2.7% of the participants."
+        val input =
+            "In 1,253 AD, a small clinic in the village of Greystone served 1,024 residents. By 1,587, they had developed primitive diagnostic tools, logging 1,950 test subjects in a single year. The population of the kingdom rose to 2,345,000 by 2,100 CE, according to census records.\n" +
+                    "Dr. Althea’s old journal noted 1.4 mmol/L of potassium in a young patient, while another had 2.3 mmol/L. A case of hyperglycemia showed blood glucose at 13.6 mmol/L. The average cholesterol level in a study of 1,450 patients was 5.2 mmol/L, with LDL levels peaking at 7.3 mmol/L in 312 of them.\n" +
+                    "A critical patient’s liver enzymes were AST: 190.4 U/L and ALT: 170.2 U/L, while bilirubin levels rose to 3.8 mg/dL. The same report listed creatinine at 1.09 mg/dL and a glomerular filtration rate (GFR) of 89.5 mL/min/1.73m².\n" +
+                    "Another study reported 3.2 billion erythrocytes per mL in a rare blood disorder. In contrast, a healthy subject had 4.8 million red blood cells per microliter and hemoglobin at 13.2 g/dL. Platelet counts ranged from 150,000 to 390,000 per microliter, with anomalies detected in 2.7% of the participants."
         val payload = BenfordRequest(input, SIGNIFICANCE_LEVEL)
         val response = client.post(ENDPOINT) {
             contentType(ContentType.Application.Json)
@@ -65,11 +65,12 @@ class BenfordApiTest {
     @Test
     fun testBenfordApiConformanceRandomNumbers() = testApplication {
         application { module() }
-        val input = "27572.49, 207451.34, 238280.63, 116162.43, 605784.05, 63569.8, 202971.68, 282924.79, 71390.22, 145243.08,\n" +
-                "664834.23, 119487.55, 929378.79, 158520.89, 156078.06, 311489.33, 253115.36, 2862.35, 185802.91, 281633.78,\n" +
-                "47862.91, 102395.15, 32791.82, 84315.44, 514267.88, 14563.71, 38877.64, 96234.55, 79325.37, 121897.16,\n" +
-                "30249.06, 71983.29, 346971.45, 25813.99, 143849.5, 153672.68, 163423.94, 284577.89, 19632.06, 116293.74,\n" +
-                "41627.53, 128672.85, 399847.3, 27514.31, 18235.76, 54862.14, 87092.31, 18864.29, 13072.53, 122391.67\n"
+        val input =
+            "27572.49, 207451.34, 238280.63, 116162.43, 605784.05, 63569.8, 202971.68, 282924.79, 71390.22, 145243.08,\n" +
+                    "664834.23, 119487.55, 929378.79, 158520.89, 156078.06, 311489.33, 253115.36, 2862.35, 185802.91, 281633.78,\n" +
+                    "47862.91, 102395.15, 32791.82, 84315.44, 514267.88, 14563.71, 38877.64, 96234.55, 79325.37, 121897.16,\n" +
+                    "30249.06, 71983.29, 346971.45, 25813.99, 143849.5, 153672.68, 163423.94, 284577.89, 19632.06, 116293.74,\n" +
+                    "41627.53, 128672.85, 399847.3, 27514.31, 18235.76, 54862.14, 87092.31, 18864.29, 13072.53, 122391.67\n"
         val payload = BenfordRequest(input, SIGNIFICANCE_LEVEL)
 
         val response = client.post(ENDPOINT) {
@@ -129,5 +130,28 @@ class BenfordApiTest {
         )
     }
 
+    @Test
+    fun testBenfordApiFailsForEmptyInput() = testApplication {
+        application { module() }
+        val payload = BenfordRequest(" ", SIGNIFICANCE_LEVEL)
 
+        val response = client.post(ENDPOINT) {
+            contentType(ContentType.Application.Json)
+            setBody(Json.encodeToString(payload))
+        }
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+    }
+
+    @Test
+    fun testBenfordApiFailsForInvalidSignificanceLevel() = testApplication {
+        application { module() }
+        val payload = BenfordRequest(" ", 2.0)
+
+        val response = client.post(ENDPOINT) {
+            contentType(ContentType.Application.Json)
+            setBody(Json.encodeToString(payload))
+        }
+        assertEquals(HttpStatusCode.BadRequest, response.status)
+    }
 }
+

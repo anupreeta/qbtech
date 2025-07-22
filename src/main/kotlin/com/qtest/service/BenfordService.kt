@@ -1,6 +1,7 @@
 package com.qbtech.com.qtest.service
 
 import com.qbtech.com.qtest.models.BenfordResponse
+import com.qtest.exceptions.BenfordExceptions
 import org.apache.commons.math3.stat.inference.ChiSquareTest
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -22,6 +23,9 @@ class BenfordService {
 
     fun analyze(input: String, significanceLevel: Double): BenfordResponse {
         val digits = extractLeadingDigits(input)
+        if (digits.size < 5) {
+            throw BenfordExceptions.InsufficientDataException("Not enough numeric values to analyze")
+        }
         val actualCounts = digits.groupingBy { it }.eachCount().mapValues { it.value.toLong() }
         val total = digits.size.toLong()
 
@@ -68,27 +72,4 @@ class BenfordService {
                     .firstOrNull { it.isDigit() && it != '0' }?.toString()?.toIntOrNull()
             }.toList()
     }
-
 }
-/*
-    fun analyze(input: String, significanceLevel: Double): BenfordResponse {
-        val digits = extractLeadingDigits(input)
-        val actualCounts = digits.groupingBy { it }.eachCount().mapValues { it.value.toLong() }
-        val total = digits.size.toLong()
-        val expectedDist = calculateExpectedDistribution()
-        val expectedCounts = (1..9).map { (expectedDist[it] ?: 0.0) * total }.toDoubleArray()
-        val observedCounts = (1..9).map { actualCounts[it] ?: 0L }.toLongArray()
-
-        val chiTest = ChiSquareTest()
-        val chiSq = chiTest.chiSquare(expectedCounts, observedCounts)
-        val pVal = chiTest.chiSquareTest(expectedCounts, observedCounts)
-
-        return BenfordResponse(
-            actualDistribution = (1..9).associateWith { actualCounts[it] ?: 0L },
-            expectedDistribution = expectedDist,
-            chiSquareStatistic = chiSq,
-            pValue = pVal,
-            conformsToBenford = pVal > significanceLevel
-        )
-    }
-*/
