@@ -1,7 +1,6 @@
-package com.qbtech.com.qtest
+package benford
 
-
-import com.qbtech.com.qtest.routes.configureRouting
+import benford.routes.configureRouting
 import io.ktor.server.application.*
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty

@@ -1,6 +1,5 @@
-package com.qbtech
+package benford
 
-import com.qbtech.com.qtest.module
 import io.ktor.client.request.*
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.*

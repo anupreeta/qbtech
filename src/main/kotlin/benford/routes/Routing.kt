@@ -1,9 +1,9 @@
-package com.qbtech.com.qtest.routes
+package benford.routes
 
-import com.qbtech.com.qtest.controller.benfordRoutes
-import com.qbtech.com.qtest.service.BenfordService
-import com.qtest.exceptions.BenfordExceptions
-import com.qtest.models.ErrorResponse
+import benford.api.benfordRoutes
+import benford.exceptions.BenfordException
+import benford.models.ErrorResponse
+import benford.application.BenfordService
 import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.application.*
@@ -18,15 +18,15 @@ fun Application.configureRouting() {
     }
 
     install(StatusPages) {
-        exception<BenfordExceptions.InvalidInputException> { call, cause ->
+        exception<BenfordException.InvalidInputException> { call, cause ->
             call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid Input", cause.message))
         }
 
-        exception<BenfordExceptions.InvalidSignificanceLevelException> { call, cause ->
+        exception<BenfordException.InvalidSignificanceLevelException> { call, cause ->
             call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid Significance Level", cause.message))
         }
 
-        exception<BenfordExceptions.InsufficientDataException> { call, cause ->
+        exception<BenfordException.InsufficientDataException> { call, cause ->
             call.respond(HttpStatusCode.BadRequest, ErrorResponse("Insufficient Data", cause.message))
         }
 

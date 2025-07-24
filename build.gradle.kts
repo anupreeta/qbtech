@@ -5,11 +5,12 @@ plugins {
     alias(libs.plugins.kotlin.plugin.serialization)
 }
 
-group = "com.qbtech"
+group = "benford"
 version = "0.0.1"
 
 application {
-    mainClass.set("io.ktor.server.netty.EngineMain")
+    mainClass.set("benford.ApplicationKt")
+    //mainClass.set("io.ktor.server.netty.EngineMain")
 }
 
 repositories {

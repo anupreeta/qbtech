@@ -1,4 +1,4 @@
-package com.qbtech.com.qtest.models
+package benford.models
 
 import kotlinx.serialization.Serializable
 

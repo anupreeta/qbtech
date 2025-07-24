@@ -1,4 +1,4 @@
-package com.qbtech.com.qtest.serialization
+package benford.serialization
 
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.builtins.MapSerializer

@@ -1,6 +1,6 @@
-package com.qbtech.com.qtest.models
+package benford.models
 
-import com.qbtech.com.qtest.serialization.BigDecimalMapSerializer
+import benford.serialization.BigDecimalMapSerializer
 import kotlinx.serialization.Serializable
 import java.math.BigDecimal
 

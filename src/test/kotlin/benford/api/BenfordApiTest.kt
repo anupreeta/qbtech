@@ -1,8 +1,9 @@
-package com.qbtech
+package benford.api
 
-import com.qbtech.com.qtest.models.BenfordRequest
-import com.qbtech.com.qtest.models.BenfordResponse
-import com.qbtech.com.qtest.module
+import benford.benford.testUtil.SampleDataGenerator.generateBenfordNumbersWithDecimals
+import benford.models.BenfordRequest
+import benford.models.BenfordResponse
+import benford.module
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
@@ -13,6 +14,8 @@ import io.ktor.server.testing.testApplication
 import kotlinx.serialization.json.Json
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import java.math.BigDecimal
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -23,7 +26,7 @@ private const val SIGNIFICANCE_LEVEL = 0.05
 
 class BenfordApiTest {
     @Test
-    fun testBenfordApiConformancePopulationData() = testApplication {
+    fun `should conform benfords law with sample data`() = testApplication {
         application { module() }
         val input =
             "In 1,253 AD, a small clinic in the village of Greystone served 1,024 residents. By 1,587, they had developed primitive diagnostic tools, logging 1,950 test subjects in a single year. The population of the kingdom rose to 2,345,000 by 2,100 CE, according to census records.\n" +
@@ -38,28 +41,56 @@ class BenfordApiTest {
         assertEquals(HttpStatusCode.OK, response.status)
 
         val result = Json.decodeFromString<BenfordResponse>(response.bodyAsText())
+        assertEquals(9, result.expectedDistribution.size)
+        assertEquals(expectedBenfordDistribution, result.expectedDistribution)
+        validateExpectedDistribution(result)
+        // Assert actualDistribution contains counts
+        assertTrue(result.actualDistribution.isNotEmpty())
+        println(result.actualDistribution.values.sum())
+        println(result.actualDistribution.values)
+        println(result.chiSquareStatistic)
+        println(result.pValue)
+        assertEquals(32, result.actualDistribution.values.sum())
+        assertTrue(
+            result.actualDistribution.values.containsAll(
+                listOf(14, 6, 5, 2, 2, 0, 1, 1, 1)
+            )
+        )
+        assertEquals(5.691988, result.chiSquareStatistic)
+        assertEquals(0.681689, result.pValue)
 
-        // ✅ Assert actualDistribution contains counts
+
+        assertTrue(result.conformsToBenford)
+        assertTrue(result.chiSquareStatistic >= 0.0)
+        assertTrue(result.pValue in 0.0..1.0)
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = [350, 1000, 5000, 8000, 10000, 20000, 80000])
+    fun `should analyze datasets of varied lengths correctly`(number: Int) = testApplication {
+        application { module() }
+        val input = generateBenfordNumbersWithDecimals(number)
+        val payload = BenfordRequest(input, SIGNIFICANCE_LEVEL)
+        val response = client.post(ENDPOINT) {
+            contentType(ContentType.Application.Json)
+            setBody(Json.encodeToString(payload))
+        }
+        assertEquals(HttpStatusCode.OK, response.status)
+
+        val result = Json.decodeFromString<BenfordResponse>(response.bodyAsText())
+
         assertTrue(result.actualDistribution.isNotEmpty())
         assertTrue(result.actualDistribution.values.sum() > 0)
 
-        // ✅ Assert expectedDistribution is present and valid
         assertEquals(9, result.expectedDistribution.size)
-        assertEquals(BigDecimal("30.10"), result.expectedDistribution[1])
-        assertEquals(BigDecimal("17.61"), result.expectedDistribution[2])
-        assertEquals(BigDecimal("4.58"), result.expectedDistribution[9])
+        validateExpectedDistribution(result)
 
         assertEquals(expectedBenfordDistribution, result.expectedDistribution)
-
-        // ✅ Assert chi-square test values are present
         assertTrue(result.chiSquareStatistic >= 0.0)
         assertTrue(result.pValue in 0.0..1.0)
 
-        // ✅ Assert that the test conforms (or not) to Benford depending on p-value
         val expectedConformance = result.pValue > 0.05
         assertEquals(expectedConformance, result.conformsToBenford)
-        val body = response.bodyAsText()
-        println("Response Test 1: $body")
     }
 
     @Test
@@ -88,7 +119,7 @@ class BenfordApiTest {
     }
 
     @Test
-    fun testBenfordApiFailsForFixedSalaries() = testApplication {
+    fun `should fail to conform Benford's law for fixed salaries data`() = testApplication {
         application { module() }
         val input = "30000, 32000, 35000, 37000, 40000, 40000, 40000, 42000, 42000, 45000,\n" +
                 "45000, 45000, 47000, 47000, 50000, 50000, 50000, 52000, 52000, 54000,\n" +
@@ -104,30 +135,14 @@ class BenfordApiTest {
         assertEquals(HttpStatusCode.OK, response.status)
         val result = Json.decodeFromString<BenfordResponse>(response.bodyAsText())
 
-        // ✅ Assert actualDistribution contains counts
         assertTrue(result.actualDistribution.isNotEmpty())
         assertTrue(result.actualDistribution.values.sum() > 0)
 
-        // ✅ Assert expectedDistribution is present and valid
         assertEquals(9, result.expectedDistribution.size)
         assertEquals(expectedBenfordDistribution, result.expectedDistribution)
         assertTrue(result.chiSquareStatistic >= 0.0)
         assertFalse(result.conformsToBenford)
         assertTrue(result.pValue in 0.0..1.0)
-    }
-
-    companion object {
-        val expectedBenfordDistribution = mapOf(
-            1 to BigDecimal("30.10"),
-            2 to BigDecimal("17.61"),
-            3 to BigDecimal("12.49"),
-            4 to BigDecimal("9.69"),
-            5 to BigDecimal("7.92"),
-            6 to BigDecimal("6.69"),
-            7 to BigDecimal("5.80"),
-            8 to BigDecimal("5.12"),
-            9 to BigDecimal("4.58")
-        )
     }
 
     @Test
@@ -152,6 +167,26 @@ class BenfordApiTest {
             setBody(Json.encodeToString(payload))
         }
         assertEquals(HttpStatusCode.BadRequest, response.status)
+    }
+
+    private fun validateExpectedDistribution(result: BenfordResponse) {
+        assertEquals(BigDecimal("30.10"), result.expectedDistribution[1])
+        assertEquals(BigDecimal("17.61"), result.expectedDistribution[2])
+        assertEquals(BigDecimal("4.58"), result.expectedDistribution[9])
+    }
+
+    companion object {
+        val expectedBenfordDistribution = mapOf(
+            1 to BigDecimal("30.10"),
+            2 to BigDecimal("17.61"),
+            3 to BigDecimal("12.49"),
+            4 to BigDecimal("9.69"),
+            5 to BigDecimal("7.92"),
+            6 to BigDecimal("6.69"),
+            7 to BigDecimal("5.80"),
+            8 to BigDecimal("5.12"),
+            9 to BigDecimal("4.58")
+        )
     }
 }
 
