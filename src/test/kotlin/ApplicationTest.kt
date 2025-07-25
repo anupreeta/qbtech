@@ -1,5 +1,6 @@
 package benford
 
+import com.example.benford.module
 import io.ktor.client.request.*
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.*
